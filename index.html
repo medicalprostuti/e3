@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ইংরেজী অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "'Honesty is the best policy' Here 'Honesty' is-",
+          options: {
+            a: "Common noun",
+            b: "Collective noun",
+            c: "Proper noun",
+            d: "Abstract noun",
+          },
+          correct: "d",
+          explanation:
+            "<p><b>Honesty</b> একটি Abstract noun। Abstract noun হলো এমন একটি noun যা কোনো ধারণা, গুণ, অবস্থা বা অনুভূতিকে বোঝায়, যা আমরা পঞ্চ ইন্দ্রিয় দ্বারা অনুভব করতে পারি না। অর্থাৎ, এটি দেখা, স্পর্শ করা, শোনা, গন্ধ নেওয়া বা স্বাদ নেওয়া যায় না।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Common noun:</b> কমন নাউন হলো সাধারণ নাম যা একই প্রকারের ব্যক্তি, বস্তু, স্থান বা ধারণাকে বোঝায়। যেমন: 'boy', 'city', 'book' ইত্যাদি। 'Honesty' কোনো সাধারণ ব্যক্তি বা বস্তুর নাম নয়।</li><li><b>(B) Collective noun:</b> কালেক্টিভ নাউন হলো একদল ব্যক্তি বা বস্তুকে একসাথে বোঝাতে ব্যবহৃত হয়। যেমন: 'team', 'family', 'flock' ইত্যাদি। 'Honesty' কোনো সমষ্টিকে বোঝায় না।</li><li><b>(C) Proper noun:</b> প্রপার নাউন হলো কোনো নির্দিষ্ট ব্যক্তি, স্থান বা বস্তুর নাম। এটি সবসময় বড় হাতের অক্ষর দিয়ে শুরু হয়। যেমন: 'Dhaka', 'Rina', 'Bangladesh' ইত্যাদি। 'Honesty' কোনো নির্দিষ্ট নাম নয়।</li><li><b>(D) Abstract noun:</b> Abstract noun হলো এমন গুণ বা ধারণার নাম যা শারীরিক অস্তিত্ব নেই। 'Honesty' একটি গুণকে বোঝায়। তাই এটি Abstract noun।</li></ul>",
+        },
+        {
+          id: 2,
+          question: "Choose the word which never has a plural form:",
+          options: {
+            a: "information",
+            b: "mouse",
+            c: "woman",
+            d: "inventor",
+          },
+          correct: "a",
+          explanation:
+            "<p>কিছু noun আছে যাদের সাধারণত কোনো plural form হয় না। এদেরকে Uncountable Noun বলা হয় এবং এগুলি সর্বদা singular হিসেবে ব্যবহৃত হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Information:</b> 'Information' একটি Uncountable noun। এর কোনো plural form নেই। আমরা 'informations' বলি না, বরং 'pieces of information' বা 'some information' বলি।</li><li><b>(B) Mouse:</b> 'Mouse' এর plural form হলো 'mice'।</li><li><b>(C) Woman:</b> 'Woman' এর plural form হলো 'women'।</li><li><b>(D) Inventor:</b> 'Inventor' এর plural form হলো 'inventors'।</li></ul>",
+        },
+        {
+          id: 3,
+          question: "The plural form of 'Data' is",
+          options: {
+            a: "datas",
+            b: "datum",
+            c: "all data necessary",
+            d: "None",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Data' শব্দটি সাধারণত plural form হিসেবে ব্যবহৃত হয়। এর singular form হলো 'datum'।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) datas:</b> 'datas' ভুল রূপ।</li><li><b>(B) datum:</b> 'Datum' হলো 'data' এর singular form। 'Data' একটি ল্যাটিন শব্দ, যার singular হলো 'datum'। আধুনিক ইংরেজিতে 'data' প্রায়শই singular এবং plural উভয় অর্থেই ব্যবহৃত হয়, তবে ব্যাকরণগতভাবে 'datum' হলো singular।</li><li><b>(C) all data necessary:</b> এটি একটি বাক্য, plural form নয়।</li><li><b>(D) None:</b> সঠিক উত্তর 'datum' এখানে অপশনে আছে।</li></ul>",
+        },
+        {
+          id: 4,
+          question: "He gave me some good ____",
+          options: {
+            a: "advice",
+            b: "advises",
+            c: "advices",
+            d: "advising",
+          },
+          correct: "a",
+          explanation:
+            "<p>'Advice' (পরামর্শ) একটি Uncountable noun। এর plural form হয় না।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Advice:</b> 'Advice' হলো 'a piece of advice' বা 'some advice' হিসেবে ব্যবহৃত হয়। এটি একটি Uncountable noun এবং এর কোনো plural form নেই।</li><li><b>(B) advises:</b> 'advises' হলো 'advise' (verb) এর third person singular form।</li><li><b>(C) advices:</b> 'advices' ব্যাকরণগতভাবে ভুল।</li><li><b>(D) advising:</b> 'advising' হলো 'advise' (verb) এর present participle form।</li></ul>",
+        },
+        {
+          id: 5,
+          question:
+            'Only ____ can be affected by the grammatical category known as "number".',
+          options: {
+            a: "nouns",
+            b: "adjectives",
+            c: "adverbs",
+            d: "conjunction",
+          },
+          correct: "a",
+          explanation:
+            "<p>ব্যাকরণগতভাবে 'number' (একবচন বা বহুবচন) শুধুমাত্র noun এবং pronoun-কে প্রভাবিত করে।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Nouns:</b> Noun-এর singular (একবচন) এবং plural (বহুবচন) রূপ আছে। যেমন: 'book' (singular), 'books' (plural)।</li><li><b>(B) Adjectives:</b> Adjective-এর singular বা plural form হয় না। এটি noun-এর সংখ্যা অনুযায়ী পরিবর্তিত হয় না। যেমন: 'beautiful flower', 'beautiful flowers'।</li><li><b>(C) Adverbs:</b> Adverb-এরও singular বা plural form হয় না।</li><li><b>(D) Conjunction:</b> Conjunction-এরও singular বা plural form হয় না।</li></ul>",
+        },
+        {
+          id: 6,
+          question: "Which of the following words has no plural form?",
+          options: {
+            a: "Analysis",
+            b: "Crisis",
+            c: "Information",
+            d: "Louse",
+          },
+          correct: "c",
+          explanation:
+            "<p>কিছু noun আছে যাদের সাধারণত কোনো plural form হয় না। এদেরকে Uncountable Noun বলা হয় এবং এগুলি সর্বদা singular হিসেবে ব্যবহৃত হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Analysis:</b> 'Analysis' এর plural form হলো 'analyses'।</li><li><b>(B) Crisis:</b> 'Crisis' এর plural form হলো 'crises'।</li><li><b>(C) Information:</b> 'Information' একটি Uncountable noun। এর কোনো plural form নেই। আমরা 'informations' বলি না, বরং 'pieces of information' বা 'some information' বলি।</li><li><b>(D) Louse:</b> 'Louse' এর plural form হলো 'lice'।</li></ul>",
+        },
+        {
+          id: 7,
+          question:
+            "Identify the word that can be used as both singular and plural:",
+          options: {
+            a: "wood",
+            b: "issue",
+            c: "fish",
+            d: "light",
+          },
+          correct: "c",
+          explanation:
+            "<p>কিছু noun আছে যাদের singular এবং plural form একই থাকে।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Wood:</b> 'Wood' যখন উপাদান হিসেবে ব্যবহৃত হয় তখন uncountable (singular)। যখন 'woods' (বন) অর্থে ব্যবহৃত হয় তখন plural। তবে, 'woods' সাধারণত 'wood' এর plural হিসেবে ব্যবহৃত হয় না।</li><li><b>(B) Issue:</b> 'Issue' এর plural form হলো 'issues'।</li><li><b>(C) Fish:</b> 'Fish' শব্দটি singular এবং plural উভয় রূপেই ব্যবহৃত হতে পারে, বিশেষ করে যখন একই প্রজাতির একাধিক মাছ বোঝানো হয়। যেমন: 'one fish', 'many fish'। যদি বিভিন্ন প্রজাতির মাছ বোঝানো হয়, তখন 'fishes' ব্যবহার করা যেতে পারে, তবে 'fish' ই বেশি প্রচলিত।</li><li><b>(D) Light:</b> 'Light' যখন আলো অর্থে ব্যবহৃত হয় তখন uncountable (singular)। যখন 'lights' (বাতি) অর্থে ব্যবহৃত হয় তখন plural।</li></ul>",
+        },
+        {
+          id: 8,
+          question:
+            "Identify the word which remains the same in its plural form:",
+          options: {
+            a: "aircraft",
+            b: "intention",
+            c: "mouse",
+            d: "thesis",
+          },
+          correct: "a",
+          explanation:
+            "<p>কিছু noun আছে যাদের singular এবং plural form একই থাকে।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Aircraft:</b> 'Aircraft' (বিমান) এর singular এবং plural form একই। যেমন: 'one aircraft', 'two aircraft'।</li><li><b>(B) Intention:</b> 'Intention' এর plural form হলো 'intentions'।</li><li><b>(C) Mouse:</b> 'Mouse' এর plural form হলো 'mice'।</li><li><b>(D) Thesis:</b> 'Thesis' এর plural form হলো 'theses'।</li></ul>",
+        },
+        {
+          id: 9,
+          question: "What is the plural number of 'ovum'?",
+          options: {
+            a: "ovumes",
+            b: "ovums",
+            c: "ova",
+            d: "ovams",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Ovum' একটি ল্যাটিন শব্দ। ল্যাটিন শব্দগুলোর plural form সাধারণত বিশেষ নিয়ম মেনে চলে।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) ovumes:</b> এটি ভুল রূপ।</li><li><b>(B) ovums:</b> এটি ভুল রূপ।</li><li><b>(C) ova:</b> 'Ovum' এর plural form হলো 'ova'। এটি ল্যাটিন 'um'Ending noun-এর নিয়ম অনুসরণ করে।</li><li><b>(D) ovams:</b> এটি ভুল রূপ।</li></ul>",
+        },
+        {
+          id: 10,
+          question: "Which one is the singular form of the word 'Alumni'?",
+          options: {
+            a: "Alumnae",
+            b: "Alumnies",
+            c: "Alumnis",
+            d: "Alumnus",
+          },
+          correct: "d",
+          explanation:
+            "<p>'Alumni' একটি ল্যাটিন শব্দ এবং এটি plural form। এর singular form হলো 'alumnus' (পুরুষ) বা 'alumna' (মহিলা)। 'Alumni' সাধারণত পুরুষ বা মিশ্র লিঙ্গের প্রাক্তন শিক্ষার্থীদের বোঝায়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Alumnae:</b> 'Alumnae' হলো 'alumna' (মহিলা প্রাক্তন শিক্ষার্থী) এর plural form।</li><li><b>(B) Alumnies:</b> এটি ভুল রূপ।</li><li><b>(C) Alumnis:</b> এটি ভুল রূপ।</li><li><b>(D) Alumnus:</b> 'Alumnus' হলো 'Alumni' এর singular masculine form।</li></ul>",
+        },
+        {
+          id: 11,
+          question: "The plural form of 'swine'",
+          options: {
+            a: "Swing",
+            b: "Swung",
+            c: "Swine",
+            d: "Swong",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Swine' হলো এমন একটি noun যার singular এবং plural form একই।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Swing:</b> এটি একটি verb বা noun (ঝুলানো বা দোলনা)।</li><li><b>(B) Swung:</b> এটি 'swing' (verb) এর past participle form।</li><li><b>(C) Swine:</b> 'Swine' (শূকর) এর singular এবং plural form একই। যেমন: 'one swine', 'many swine'।</li><li><b>(D) Swong:</b> এটি ভুল রূপ।</li></ul>",
+        },
+        {
+          id: 12,
+          question: "What is the plural form of the word louse?",
+          options: {
+            a: "louses",
+            b: "lice",
+            c: "lices",
+            d: "licess",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Louse' একটি irregular noun যার plural form অনিয়মিতভাবে গঠিত হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) louses:</b> এটি ভুল রূপ।</li><li><b>(B) lice:</b> 'Louse' (উকুন) এর plural form হলো 'lice'। এটি 'mouse' - 'mice' এর মতো অনিয়মিত plural।</li><li><b>(C) lices:</b> এটি ভুল রূপ।</li><li><b>(D) licess:</b> এটি ভুল রূপ।</li></ul>",
+        },
+        {
+          id: 13,
+          question: "Identify the word that remains same in plural form:",
+          options: {
+            a: "deer",
+            b: "horse",
+            c: "elephant",
+            d: "tiger",
+          },
+          correct: "a",
+          explanation:
+            "<p>কিছু noun আছে যাদের singular এবং plural form একই থাকে।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Deer:</b> 'Deer' (হরিণ) এর singular এবং plural form একই। যেমন: 'one deer', 'two deer'।</li><li><b>(B) Horse:</b> 'Horse' এর plural form হলো 'horses'।</li><li><b>(C) Elephant:</b> 'Elephant' এর plural form হলো 'elephants'।</li><li><b>(D) Tiger:</b> 'Tiger' এর plural form হলো 'tigers'।</li></ul>",
+        },
+        {
+          id: 14,
+          question: "A troupe of ____ has gone to entertain the soldiers.",
+          options: {
+            a: "artists",
+            b: "artistes",
+            c: "artisans",
+            d: "artificers",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Troupe' শব্দটি সাধারণত অভিনেতা, নর্তক বা বিনোদনকারীদের দল বোঝাতে ব্যবহৃত হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Artists:</b> 'Artists' বলতে সাধারণত চিত্রশিল্পী বা ভাস্করদের বোঝায়।</li><li><b>(B) Artistes:</b> 'Artistes' (বিশেষত নৃত্যশিল্পী, গায়ক, অভিনেতা) হলেন পেশাদার বিনোদনকারী। 'A troupe of artistes' হলো একটি সঠিক collocation।</li><li><b>(C) Artisans:</b> 'Artisans' হলেন কারিগর বা হস্তশিল্পীরা।</li><li><b>(D) Artificers:</b> 'Artificers' হলেন দক্ষ কারিগর বা উদ্ভাবকরা।</li></ul>",
+        },
+        {
+          id: 15,
+          question: "Identify the word in the plural form-",
+          options: {
+            a: "Agendum",
+            b: "Physics",
+            c: "Radii",
+            d: "Civics",
+          },
+          correct: "c",
+          explanation:
+            "<p>প্রশ্নটি plural form-এ থাকা শব্দটিকে চিহ্নিত করতে বলছে।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Agendum:</b> 'Agendum' হলো singular form। এর plural form হলো 'agenda'।</li><li><b>(B) Physics:</b> 'Physics' (পদার্থবিজ্ঞান) একটি Uncountable noun এবং সর্বদা singular হিসেবে ব্যবহৃত হয়, যদিও এর শেষে 's' আছে।</li><li><b>(C) Radii:</b> 'Radii' হলো 'radius' এর plural form। এটি ল্যাটিন 'us'-ending noun-এর নিয়ম অনুসরণ করে।</li><li><b>(D) Civics:</b> 'Civics' (পৌরনীতি) একটি Uncountable noun এবং সর্বদা singular হিসেবে ব্যবহৃত হয়, যদিও এর শেষে 's' আছে।</li></ul>",
+        },
+        {
+          id: 16,
+          question: "What is the singular of 'Appendices'?",
+          options: {
+            a: "Appendix",
+            b: "Appendice",
+            c: "Appendis",
+            d: "Appendic",
+          },
+          correct: "a",
+          explanation:
+            "<p>'Appendices' হলো 'appendix' এর plural form। এটি ল্যাটিন 'ex' বা 'ix'-ending noun-এর নিয়ম অনুসরণ করে।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Appendix:</b> 'Appendix' হলো 'Appendices' এর singular form।</li><li><b>(B) Appendice:</b> এটি ভুল রূপ।</li><li><b>(C) Appendis:</b> এটি ভুল রূপ।</li><li><b>(D) Appendic:</b> এটি ভুল রূপ।</li></ul>",
+        },
+        {
+          id: 17,
+          question: "Which plural word can be used as a singular?",
+          options: {
+            a: "ethics",
+            b: "books",
+            c: "universities",
+            d: "princes",
+          },
+          correct: "a",
+          explanation:
+            "<p>কিছু noun আছে যাদের শেষে 's' থাকে এবং দেখতে plural মনে হলেও তারা singular অর্থ প্রকাশ করে এবং singular verb গ্রহণ করে। এদেরকে 'uncountable nouns' বা 'nouns that look plural but are singular' বলা হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Ethics:</b> 'Ethics' (নীতিশাস্ত্র) হলো একটি বিষয় বা শাখা, যা singular verb গ্রহণ করে। যেমন: 'Ethics is an important subject'. এটি plural word দেখতে হলেও singular অর্থে ব্যবহৃত হয়।</li><li><b>(B) Books:</b> 'Books' হলো 'book' এর plural form। এটি সর্বদা plural অর্থ প্রকাশ করে।</li><li><b>(C) Universities:</b> 'Universities' হলো 'university' এর plural form। এটি সর্বদা plural অর্থ প্রকাশ করে।</li><li><b>(D) Princes:</b> 'Princes' হলো 'prince' এর plural form। এটি সর্বদা plural অর্থ প্রকাশ করে।</li></ul>",
+        },
+        {
+          id: 18,
+          question: "Which of the following words is in singular form?",
+          options: {
+            a: "agenda",
+            b: "formulae",
+            c: "oases",
+            d: "radius",
+          },
+          correct: "d",
+          explanation:
+            "<p>প্রশ্নটি singular form-এ থাকা শব্দটিকে চিহ্নিত করতে বলছে।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Agenda:</b> 'Agenda' হলো 'agendum' এর plural form। যদিও আধুনিক ইংরেজিতে 'agenda' singular হিসেবেও ব্যবহৃত হয়, এর মূল রূপ plural।</li><li><b>(B) Formulae:</b> 'Formulae' হলো 'formula' এর plural form।</li><li><b>(C) Oases:</b> 'Oases' হলো 'oasis' এর plural form।</li><li><b>(D) Radius:</b> 'Radius' হলো singular form। এর plural form হলো 'radii'।</li></ul>",
+        },
+        {
+          id: 19,
+          question: "Which expression is correct?",
+          options: {
+            a: "ten cattles",
+            b: "ten head of cattle",
+            c: "one cattle",
+            d: "ten heads of cattle",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Cattle' একটি Collective noun এবং এটি নিজেই plural। একে গণনা করার জন্য 'head of cattle' expression ব্যবহার করা হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) ten cattles:</b> 'Cattles' ভুল, কারণ 'cattle' নিজেই plural এবং এর শেষে 's' যোগ করা হয় না।</li><li><b>(B) ten head of cattle:</b> এটি সঠিক expression। 'Head' এখানে গণনার একক হিসেবে ব্যবহৃত হয় এবং 'cattle' এর plural রূপ পরিবর্তন হয় না।</li><li><b>(C) one cattle:</b> 'Cattle' যেহেতু একটি Collective noun, তাই 'one cattle' সাধারণত ব্যবহার করা হয় না। 'One head of cattle' বা 'a cow/bull' বলা হয়।</li><li><b>(D) ten heads of cattle:</b> 'Heads' plural করা ঠিক নয় যখন 'head' গণনার একক হিসেবে ব্যবহৃত হয়। 'Head' এখানে একক হিসেবে অপরিবর্তিত থাকে।</li></ul>",
+        },
+        {
+          id: 20,
+          question: "The farmer has four ____.",
+          options: {
+            a: "sheeps",
+            b: "sheepes",
+            c: "sheep",
+            d: "Sheepss",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Sheep' হলো এমন একটি noun যার singular এবং plural form একই।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) sheeps:</b> এটি ভুল রূপ।</li><li><b>(B) sheepes:</b> এটি ভুল রূপ।</li><li><b>(C) sheep:</b> 'Sheep' (ভেড়া) এর singular এবং plural form একই। যেমন: 'one sheep', 'four sheep'।</li><li><b>(D) Sheepss:</b> এটি ভুল রূপ।</li></ul>",
+        },
+        {
+          id: 21,
+          question: "Which is the plural of the word 'Index'?",
+          options: {
+            a: "Indexs",
+            b: "Index",
+            c: "Indexes",
+            d: "Indices",
+          },
+          correct: "d",
+          explanation:
+            "<p>'Index' এর দুটি plural form আছে: 'indexes' এবং 'indices'। 'Indices' হলো ল্যাটিন উৎস থেকে আসা রূপ এবং এটি সাধারণত গাণিতিক বা বৈজ্ঞানিক প্রসঙ্গে ব্যবহৃত হয়, যখন 'indexes' সাধারণত বইয়ের সূচী বা অন্যান্য সাধারণ অর্থে ব্যবহৃত হয়। যেহেতু 'indices' একটি বিকল্প এবং বহুল ব্যবহৃত plural form, এটি সঠিক উত্তর।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Indexs:</b> এটি ভুল রূপ।</li><li><b>(B) Index:</b> এটি singular form।</li><li><b>(C) Indexes:</b> এটিও একটি সঠিক plural form, তবে প্রশ্নে প্রদত্ত অপশনগুলোর মধ্যে 'indices' ব্যাকরণগতভাবে 'Index' এর একটি বৈধ plural।</li><li><b>(D) Indices:</b> 'Index' এর একটি plural form হলো 'indices', বিশেষ করে গণিত, বিজ্ঞান বা সূচিপত্রের ক্ষেত্রে।</li></ul>",
+        },
+        {
+          id: 22,
+          question: "Plural of the word 'Knife' is",
+          options: {
+            a: "Knifes",
+            b: "Knivess",
+            c: "Knives",
+            d: "Knifess",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Knife' হলো একটি irregular noun যার plural form 'f' বা 'fe' এর পরিবর্তে 'ves' যোগ করে গঠিত হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Knifes:</b> এটি ভুল রূপ।</li><li><b>(B) Knivess:</b> এটি ভুল রূপ।</li><li><b>(C) Knives:</b> 'Knife' (ছুরি) এর plural form হলো 'knives'। এটি 'wife-wives', 'life-lives' এর মতো অনিয়মিত plural।</li><li><b>(D) Knifess:</b> এটি ভুল রূপ।</li></ul>",
+        },
+        {
+          id: 23,
+          question: "Which one is the singular?",
+          options: {
+            a: "Public",
+            b: "Crowd",
+            c: "Mice",
+            d: "Knife",
+          },
+          correct: "d",
+          explanation:
+            "<p>প্রশ্নটি singular form-এ থাকা শব্দটিকে চিহ্নিত করতে বলছে।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Public:</b> 'Public' (জনসাধারণ) একটি Collective noun। এটি singular বা plural উভয় অর্থেই ব্যবহৃত হতে পারে, তবে সাধারণত singular verb গ্রহণ করে।</li><li><b>(B) Crowd:</b> 'Crowd' (ভিড়) একটি Collective noun। এটি singular।</li><li><b>(C) Mice:</b> 'Mice' হলো 'mouse' এর plural form।</li><li><b>(D) Knife:</b> 'Knife' (ছুরি) হলো singular form। এর plural form হলো 'knives'।</li></ul>",
+        },
+        {
+          id: 24,
+          question: 'The plural form of "Piano" is:',
+          options: {
+            a: "Pianeos",
+            b: "Pianos",
+            c: "Pianose",
+            d: "Pianoss",
+          },
+          correct: "b",
+          explanation:
+            "<p>'Piano' একটি noun যার plural form সাধারণত 's' যোগ করে গঠিত হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Pianeos:</b> এটি ভুল রূপ।</li><li><b>(B) Pianos:</b> 'Piano' এর plural form হলো 'pianos'। কিছু O-ending noun-এর ক্ষেত্রে শুধু 's' যোগ করে plural করা হয় (যেমন: photo-photos, radio-radios)।</li><li><b>(C) Pianose:</b> এটি ভুল রূপ।</li><li><b>(D) Pianoss:</b> এটি ভুল রূপ।</li></ul>",
+        },
+        {
+          id: 25,
+          question: "What is the plural form of the word 'alumna'?",
+          options: {
+            a: "alumnae",
+            b: "alumni",
+            c: "alumnus",
+            d: "alumnas",
+          },
+          correct: "a",
+          explanation:
+            "<p>'Alumna' একটি ল্যাটিন শব্দ, যা একজন মহিলা প্রাক্তন শিক্ষার্থীকে বোঝায়। এর plural form ল্যাটিন ব্যাকরণের নিয়ম অনুযায়ী গঠিত হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) alumnae:</b> 'Alumna' এর plural form হলো 'alumnae'। এটি সাধারণত মহিলা প্রাক্তন শিক্ষার্থীদের বোঝাতে ব্যবহৃত হয়।</li><li><b>(B) alumni:</b> 'Alumni' হলো 'alumnus' (পুরুষ প্রাক্তন শিক্ষার্থী) এর plural form, যা পুরুষ বা মিশ্র লিঙ্গের প্রাক্তন শিক্ষার্থীদের বোঝায়।</li><li><b>(C) alumnus:</b> 'Alumnus' হলো 'alumni' এর singular masculine form।</li><li><b>(D) alumnas:</b> এটি ভুল রূপ।</li></ul>",
+        },
+        {
+          id: 26,
+          question: "What is the plural form of 'phenomenon'?",
+          options: {
+            a: "Phenomenal",
+            b: "Phenomenas",
+            c: "Phenomena",
+            d: "Phenomenons",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Phenomenon' একটি গ্রিক শব্দ এবং এর plural form গ্রিক ব্যাকরণের নিয়ম অনুযায়ী গঠিত হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Phenomenal:</b> 'Phenomenal' হলো একটি adjective, যার অর্থ অসাধারণ। এটি plural form নয়।</li><li><b>(B) Phenomenas:</b> এটি ভুল রূপ।</li><li><b>(C) Phenomena:</b> 'Phenomenon' (ঘটনা/প্রপঞ্চ) এর plural form হলো 'phenomena'।</li><li><b>(D) Phenomenons:</b> এটি ভুল রূপ, যদিও কিছু ক্ষেত্রে অনানুষ্ঠানিকভাবে ব্যবহৃত হতে পারে। তবে 'phenomena' হলো সঠিক এবং প্রচলিত plural form।</li></ul>",
+        },
+        {
+          id: 27,
+          question: "Which of the following is a plural noun?",
+          options: {
+            a: "Datum",
+            b: "Phenomena",
+            c: "Phenomenon",
+            d: "Criterion",
+          },
+          correct: "b",
+          explanation:
+            "<p>প্রশ্নটি plural noun-কে চিহ্নিত করতে বলছে।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Datum:</b> 'Datum' হলো singular form। এর plural form হলো 'data'।</li><li><b>(B) Phenomena:</b> 'Phenomena' হলো 'phenomenon' এর plural form।</li><li><b>(C) Phenomenon:</b> 'Phenomenon' হলো singular form।</li><li><b>(D) Criterion:</b> 'Criterion' হলো singular form। এর plural form হলো 'criteria'।</li></ul>",
+        },
+        {
+          id: 28,
+          question: "The plural form of 'sheep' is-",
+          options: {
+            a: "Sheeps",
+            b: "Sheepes",
+            c: "Sheep",
+            d: "Ships",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Sheep' হলো এমন একটি noun যার singular এবং plural form একই।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Sheeps:</b> এটি ভুল রূপ।</li><li><b>(B) Sheepes:</b> এটি ভুল রূপ।</li><li><b>(C) Sheep:</b> 'Sheep' (ভেড়া) এর singular এবং plural form একই। যেমন: 'one sheep', 'many sheep'।</li><li><b>(D) Ships:</b> 'Ships' হলো 'ship' এর plural form।</li></ul>",
+        },
+        {
+          id: 29,
+          question: "The plural form of 'thief' is -",
+          options: {
+            a: "Thiefes",
+            b: "Thiefs",
+            c: "Thieves",
+            d: "Thives",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Thief' হলো একটি irregular noun যার plural form 'f' বা 'fe' এর পরিবর্তে 'ves' যোগ করে গঠিত হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Thiefes:</b> এটি ভুল রূপ।</li><li><b>(B) Thiefs:</b> এটি ভুল রূপ।</li><li><b>(C) Thieves:</b> 'Thief' (চোর) এর plural form হলো 'thieves'। এটি 'wife-wives', 'leaf-leaves' এর মতো অনিয়মিত plural।</li><li><b>(D) Thives:</b> এটি ভুল রূপ।</li></ul>",
+        },
+        {
+          id: 30,
+          question: "The plural form of 'oasis' is",
+          options: {
+            a: "Oasises",
+            b: "Oasies",
+            c: "Oases",
+            d: "Oasii",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Oasis' একটি গ্রিক শব্দ এবং এর plural form গ্রিক ব্যাকরণের নিয়ম অনুযায়ী গঠিত হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Oasises:</b> এটি ভুল রূপ।</li><li><b>(B) Oasies:</b> এটি ভুল রূপ।</li><li><b>(C) Oases:</b> 'Oasis' (মরুদ্য়ান) এর plural form হলো 'oases'।</li><li><b>(D) Oasii:</b> এটি ভুল রূপ।</li></ul>",
+        },
+        {
+          id: 31,
+          question: "Which one is the correct noun form of 'equivalent'?",
+          options: {
+            a: "Equidistance",
+            b: "Equisition",
+            c: "Equivalence",
+            d: "Equivalention",
+          },
+          correct: "c",
+          explanation:
+            "<p>'Equivalent' একটি adjective যার অর্থ সমতুল্য বা সমমানের। এর noun form হলো 'equivalence'।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Equidistance:</b> 'Equidistance' অর্থ সমদূরত্ব। এটি 'equivalent' এর noun form নয়।</li><li><b>(B) Equisition:</b> এই শব্দটি প্রচলিত নয় বা ব্যাকরণগতভাবে ভুল।</li><li><b>(C) Equivalence:</b> 'Equivalence' (সমতা বা সমতুল্যতা) হলো 'equivalent' এর সঠিক noun form।</li><li><b>(D) Equivalention:</b> এই শব্দটি প্রচলিত নয় বা ব্যাকরণগতভাবে ভুল।</li></ul>",
+        },
+        {
+          id: 32,
+          question:
+            "What kind of man is quite the opposite type of amalgamate?",
+          options: {
+            a: "mannered",
+            b: "Amiable",
+            c: "Polite",
+            d: "none of the above",
+          },
+          correct: "d",
+          explanation:
+            "<p>প্রশ্নটি 'amalgamate' শব্দের বিপরীত অর্থের একটি 'man' এর প্রকারভেদ জানতে চাইছে। 'Amalgamate' মানে একত্রিত করা বা মিশ্রিত করা। এর বিপরীত অর্থ হলো পৃথক করা বা আলাদা করা। 'Manner' বা 'amiable' বা 'polite' কোনোটিরই 'amalgamate' এর সাথে সরাসরি বিপরীত সম্পর্ক নেই।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>Amalgamate:</b> একত্রিত করা, মিশ্রিত করা বা সংযুক্ত করা।</li><li><b>(A) Mannerd:</b> 'Mannerd' (ভদ্র) হলো আচরণগত গুণ। এটি 'amalgamate' এর বিপরীত নয়।</li><li><b>(B) Amiable:</b> 'Amiable' (বন্ধুত্বপূর্ণ) হলো একটি ব্যক্তিত্বের গুণ। এটি 'amalgamate' এর বিপরীত নয়।</li><li><b>(C) Polite:</b> 'Polite' (বিনয়ী) হলো একটি আচরণগত গুণ। এটি 'amalgamate' এর বিপরীত নয়।</li><li><b>(D) none of the above:</b> যেহেতু অপশনগুলোতে 'amalgamate' এর বিপরীত অর্থপূর্ণ কোনো শব্দ নেই, তাই 'none of the above' সঠিক উত্তর। 'Amalgamate' এর বিপরীত অর্থ হতে পারে 'separate', 'divide', 'disperse' ইত্যাদি।</li></ul>",
+        },
+        {
+          id: 33,
+          question: "Which one is the agent noun of 'investigation'?",
+          options: {
+            a: "Investor",
+            b: "Investigator",
+            c: "Investment",
+            d: "Investination",
+          },
+          correct: "b",
+          explanation:
+            "<p>Agent noun হলো এমন noun যা কোনো কাজ সম্পাদনকারী ব্যক্তি বা বস্তুকে বোঝায়। 'Investigation' (অনুসন্ধান) হলো একটি প্রক্রিয়া। যে এই প্রক্রিয়াটি সম্পন্ন করে তাকে 'investigator' বলা হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) Investor:</b> 'Investor' (বিনিয়োগকারী) হলো যে বিনিয়োগ করে। এটি 'invest' (বিনিয়োগ করা) verb থেকে এসেছে।</li><li><b>(B) Investigator:</b> 'Investigator' (অনুসন্ধানকারী) হলো যে 'investigation' (অনুসন্ধান) করে। এটি 'investigate' (অনুসন্ধান করা) verb থেকে এসেছে এবং 'investigation' এর agent noun।</li><li><b>(C) Investment:</b> 'Investment' (বিনিয়োগ) হলো 'invest' (বিনিয়োগ করা) verb এর noun form। এটি একটি কাজ বা ফলাফলকে বোঝায়, কাজ সম্পাদনকারীকে নয়।</li><li><b>(D) Investination:</b> এই শব্দটি প্রচলিত নয় বা ব্যাকরণগতভাবে ভুল।</li></ul>",
+        },
+        {
+          id: 34,
+          question: "The ____ of the office will be sold.",
+          options: {
+            a: "furniture",
+            b: "pieces of furnitures",
+            c: "furnitures",
+            d: "pieces and furniture",
+          },
+          correct: "a",
+          explanation:
+            "<p>'Furniture' একটি Uncountable noun। এর কোনো plural form হয় না এবং এটি সর্বদা singular হিসেবে ব্যবহৃত হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) furniture:</b> 'Furniture' একটি Uncountable noun। এটি সর্বদা singular form-এ থাকে। তাই 'the furniture' সঠিক ব্যবহার।</li><li><b>(B) pieces of furnitures:</b> 'Furnitures' ভুল। যদিও 'pieces of furniture' বলা যায়, 'pieces of furnitures' ভুল।</li><li><b>(C) furnitures:</b> 'Furnitures' ব্যাকরণগতভাবে ভুল।</li><li><b>(D) pieces and furniture:</b> বাক্য গঠনের দিক থেকে 'pieces and furniture' এর চেয়ে 'furniture' বা 'pieces of furniture' বেশি প্রচলিত।</li></ul>",
+        },
+        {
+          id: 35,
+          question: "A ____ of fish.",
+          options: {
+            a: "swarm",
+            b: "shoal",
+            c: "flock",
+          },
+          correct: "b",
+          explanation:
+            "<p>বিভিন্ন প্রাণী বা বস্তুর দলকে বোঝাতে নির্দিষ্ট Collective noun ব্যবহার করা হয়। মাছের দলকে বোঝাতে 'shoal' বা 'school' ব্যবহৃত হয়।</p><br><p><b>ব্যাখ্যা:</b></p><ul><li><b>(A) swarm:</b> 'Swarm' সাধারণত পোকামাকড়ের (যেমন: মৌমাছি) দলকে বোঝাতে ব্যবহৃত হয়। যেমন: 'a swarm of bees'।</li><li><b>(B) shoal:</b> 'Shoal' (বা 'school') হলো মাছের দলকে বোঝাতে ব্যবহৃত সঠিক Collective noun। যেমন: 'a shoal of fish'।</li><li><b>(C) flock:</b> 'Flock' সাধারণত পাখি বা ভেড়ার দলকে বোঝাতে ব্যবহৃত হয়। যেমন: 'a flock of birds', 'a flock of sheep'।</li></ul>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                                          <label class="option" data-option="${option}">
+                                                                            <div class="circle">${option}</div>
+                                                                            <span class="option-text">${question.options[option]}</span>
+                                                                          </label>
+                                                                        `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                             <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                             <div class="explanation-content">
+                                                                               <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                               ${question.explanation}
+                                                                             </div>
+                                                                           </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                        <p class="question-label">${
+                                                                          index +
+                                                                          1
+                                                                        }. ${
+            question.question
+          }</p>
+                                                                        <div class="options">
+                                                                          ${optionsHTML}
+                                                                        </div>
+                                                                        ${explanationHTML}
+                                                                      `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
